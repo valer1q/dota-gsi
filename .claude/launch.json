@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "gsi",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["/Users/v/Desktop/dota-gsi/gsi_server.py", "--port", "3111"],
+      "port": 3111
+    }
+  ]
+}

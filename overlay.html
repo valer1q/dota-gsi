@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dota GSI — предметы игроков</title>
+<style>
+  :root { --radiant:#3fae6b; --dire:#c8453a; --bg:#11151c; --card:#1b212c; --muted:#7a8694; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:14px/1.4 system-ui,Segoe UI,Roboto,sans-serif; background:var(--bg); color:#e6ebf2; }
+  header { display:flex; align-items:center; gap:12px; padding:10px 16px; border-bottom:1px solid #222b38; }
+  header h1 { font-size:15px; margin:0; font-weight:600; }
+  .clock { font-variant-numeric:tabular-nums; color:var(--muted); margin-left:auto; }
+  .dot { width:8px; height:8px; border-radius:50%; background:var(--muted); }
+  .dot.live { background:var(--radiant); box-shadow:0 0 8px var(--radiant); }
+  .teams { display:grid; grid-template-columns:1fr 1fr; gap:16px; padding:16px; }
+  .team h2 { font-size:13px; text-transform:uppercase; letter-spacing:.05em; margin:0 0 8px; }
+  .team.radiant h2 { color:var(--radiant); }
+  .team.dire h2 { color:var(--dire); }
+  .player { background:var(--card); border-radius:8px; padding:10px 12px; margin-bottom:8px; }
+  .player .who { display:flex; gap:8px; align-items:baseline; margin-bottom:6px; }
+  .player .nick { font-weight:600; }
+  .player .hero { color:var(--muted); font-size:12px; }
+  .items { display:flex; flex-wrap:wrap; gap:4px; }
+  .item { background:#2a3340; border-radius:4px; padding:2px 7px; font-size:12px; white-space:nowrap; }
+  .item.neutral { background:#3a2f1a; color:#e8c87a; }
+  .item.bp { opacity:.55; }
+  .empty { color:var(--muted); font-style:italic; }
+  .msg { padding:40px 16px; text-align:center; color:var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <span class="dot" id="dot"></span>
+  <h1>Dota GSI — предметы игроков</h1>
+  <span class="clock" id="clock"></span>
+</header>
+<div id="root"><div class="msg">Подключаюсь…</div></div>
+
+<script>
+const fmtClock = s => {
+  if (s == null) return "—";
+  const neg = s < 0; s = Math.abs(s|0);
+  const m = String((s/60|0)).padStart(2,"0"), sec = String(s%60).padStart(2,"0");
+  return (neg?"-":"") + m + ":" + sec;
+};
+const prettyItem = n => n.replace(/^item_/,"").replace(/_/g," ").replace(/\b\w/g, c=>c.toUpperCase());
+
+function itemChip(name, cls) {
+  const m = name.match(/^(.*?)(\s*\(x\d+\))?$/);
+  const base = prettyItem(m[1]);
+  const charges = m[2] || "";
+  return `<span class="item ${cls}">${base}${charges}</span>`;
+}
+
+function renderTeam(label, cls, players) {
+  const rows = players.map(p => {
+    const it = p.items || {};
+    const inv = (it.inventory||[]).map(n=>itemChip(n,"")).join("");
+    const bp  = (it.backpack||[]).map(n=>itemChip(n,"bp")).join("");
+    const neu = (it.neutral||[]).map(n=>itemChip(n,"neutral")).join("");
+    const chips = inv+bp+neu || `<span class="empty">нет предметов</span>`;
+    return `<div class="player">
+      <div class="who"><span class="nick">${p.player||"?"}</span>
+      <span class="hero">${prettyItem(p.hero||"").replace(/^Npc Dota Hero /,"")||"?"}</span></div>
+      <div class="items">${chips}</div></div>`;
+  }).join("");
+  return `<div class="team ${cls}"><h2>${label}</h2>${rows||'<div class="msg">—</div>'}</div>`;
+}
+
+async function tick() {
+  try {
+    const r = await fetch("/state", {cache:"no-store"});
+    const s = await r.json();
+    const fresh = s.ts && (Date.now()/1000 - s.ts) < 10;
+    document.getElementById("dot").className = "dot" + (fresh && s.spectating ? " live" : "");
+    document.getElementById("clock").textContent = fresh ? fmtClock(s.clock_time) : "нет данных";
+
+    if (!s.spectating || !s.players.length) {
+      document.getElementById("root").innerHTML =
+        `<div class="msg">Спектатор-данных нет. Запусти просмотр матча в клиенте Доты.</div>`;
+      return;
+    }
+    const rad = s.players.filter(p=>p.team==="Radiant");
+    const dire = s.players.filter(p=>p.team==="Dire");
+    document.getElementById("root").innerHTML =
+      `<div class="teams">${renderTeam("Radiant","radiant",rad)}${renderTeam("Dire","dire",dire)}</div>`;
+  } catch (e) {
+    document.getElementById("dot").className = "dot";
+    document.getElementById("clock").textContent = "сервер недоступен";
+  }
+}
+tick();
+setInterval(tick, 1000);
+</script>
+</body>
+</html>
