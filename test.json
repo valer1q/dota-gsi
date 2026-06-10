@@ -1,0 +1,9 @@
+{
+  "map": {"clock_time": 642},
+  "player": {"team2": {"player0": {"name": "Alice"}}, "team3": {"player5": {"name": "Bob"}}},
+  "hero":  {"team2": {"player0": {"name": "npc_dota_hero_juggernaut"}}, "team3": {"player5": {"name": "npc_dota_hero_lina"}}},
+  "items": {
+    "team2": {"player0": {"slot0": {"name": "item_black_king_bar"}, "slot1": {"name": "item_power_treads"}, "slot6": {"name": "item_tpscroll", "charges": 2}, "neutral0": {"name": "item_trusty_shovel"}}},
+    "team3": {"player5": {"slot0": {"name": "item_blink"}}}
+  }
+}
